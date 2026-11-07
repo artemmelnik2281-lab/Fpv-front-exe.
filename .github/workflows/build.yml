@@ -1,0 +1,36 @@
+name: Build FPV Front EXE
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Prepare
+        shell: bash
+        run: |
+          HTML_FILE=$(find . -maxdepth 1 -iname '*.html' -type f | head -n 1)
+          cp "$HTML_FILE" index.html
+
+          echo '{"name":"fpv-front","version":"1.0.0","main":"main.js","scripts":{"build":"electron-builder --win portable"},"devDependencies":{"electron":"^39.0.0","electron-builder":"^26.0.0"},"build":{"productName":"FPV Front","files":["index.html","main.js"]}}' > package.json
+
+          echo "const {app,BrowserWindow}=require('electron'); app.whenReady().then(()=>{const w=new BrowserWindow({width:1280,height:720,autoHideMenuBar:true});w.loadFile('index.html');});" > main.js
+
+          npm install
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FPV-Front-Windows
+          path: dist/*.exe
